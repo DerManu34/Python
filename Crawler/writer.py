@@ -1,10 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from mysql.connector import MySQLConnection, Error
 from python_mysql_dbconfig import read_db_config
- 
+from urllib.parse import urlparse
+
+
 class Writer:
     def insert_body(self, body, url, timestamp):
         query = "INSERT INTO bodies(body,url,`timestamp`) " \
-                "VALUES(%s,%s, %s)"
+                "VALUES(%s,%s,%s)"
         args = (body, url, timestamp)
         try:
             db_config = read_db_config()
@@ -27,10 +32,30 @@ class Writer:
             conn.close()
 
     def insert_link(self, link, origin, timestamp):
-        link = link.encode("utf-8")
+        linkWithoutEncoding = link.encode('utf8')
+        link = link
         query = "INSERT INTO links(link,origin, `timestamp`) " \
                 "VALUES(%s,%s,%s)"
-        args = (link, origin, timestamp)
+
+
+
+        parsed_uri2 = urlparse(link)
+        result2 = '{uri.netloc}'.format(uri=parsed_uri2)
+  
+        print(result2)
+        if not parsed_uri2.scheme:    
+            parsed_uri = urlparse(origin)
+            baseUrl = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+            finalLink = baseUrl+str(link)
+        else: 
+            finalLink = linkWithoutEncoding
+
+
+        args = (finalLink, origin, timestamp)
+
+
+
+
         try:
             db_config = read_db_config()
             conn = MySQLConnection(**db_config)
