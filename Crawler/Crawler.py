@@ -26,17 +26,25 @@ class Crawler:
 					XPATH_NAME = xpath
 					RAW_NAME = doc.xpath(XPATH_NAME)
 					if type == 'body':
-						print('doin body')
 						print("\r\n")
+						print('doin body')
 						LANGUAGE = doc.xpath('//html/@lang')
 						LANGUAGE = LANGUAGE[0]
 						BODY = ' '.join(''.join(RAW_NAME).split()) if RAW_NAME else None
 						data =  BODY
+						writer = Writer()			
+						ts = time()
+						timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 						if data and LANGUAGE == 'de':
-							ts = time()
-							timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')		
-							writer = Writer()		
-							writer.insert_body(data, url, timestamp)
+							writer.insertBody(data, url, timestamp)
+						# print('weiter')
+						# print(url)
+						# # print(type(url))
+						# print(timestamp)
+						# # print(type(timestamp))
+						# print(LANGUAGE)
+						# print(type(LANGUAGE))
+						writer.updateLink(url, timestamp, LANGUAGE)
 					elif type == 'links':
 						print('doin links')
 						print("\r\n")
@@ -45,7 +53,7 @@ class Crawler:
 							for link in RAW_NAME:
 								ts = time()
 								timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')						
-								writer.insert_link(link, url, timestamp)
+								writer.insertLink(link, url, timestamp)
 					break
 				elif response.status_code==404:
 					print('got status code 404')
@@ -60,5 +68,28 @@ class Crawler:
 		urlToParse = reader.selectUrlToParse()
 		return urlToParse
 
+	def getOpenUrlsToParse(self):
+		reader = Reader()
+		openUrlsToParse = reader.selectOpenUrlsToParse()
+		return openUrlsToParse
 
+
+	def runLoop(self, limit, end):
+		linklist = self.getOpenUrlsToParse()
+		if end == 0:
+			return		
+		for index, link in enumerate(linklist):
+			link = link[0]
+			print(link)
+
+
+			self.parseUrl(link, '//a/@href', 'links')
+			self.parseUrl(link, '//body//text()', 'body')	
+
+			if index == end:
+				return
+			if index == limit:
+				print("\r\n")
+				newEnd = end - index
+				self.runLoop(limit, newEnd)
 

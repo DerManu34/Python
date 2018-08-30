@@ -7,14 +7,16 @@ from urllib.parse import urlparse
 
 class Writer:
 
+    def getCursor(self):
+        db_config = read_db_config()
+        conn = MySQLConnection(**db_config)
+        cursor = conn.cursor()
+        return cursor, conn
+
     def insertToDbExecution(self, query, args):
         try:
-            db_config = read_db_config()
-            conn = MySQLConnection(**db_config)
-     
-            cursor = conn.cursor()
+            cursor, conn = self.getCursor()
             cursor.execute(query, args)
-     
             if cursor.lastrowid:
                 print('last insert id', cursor.lastrowid)
             else:
@@ -28,9 +30,21 @@ class Writer:
             cursor.close()
             conn.close()        
 
+    def updateDbExecution(self, query, args):
+        try:
+            cursor, conn = self.getCursor()
+            cursor.execute(query, args)
+            conn.commit()
+        except Error as error:
+            print(error)
+     
+        finally:
+            cursor.close()
+            conn.close()                    
 
 
-    def insert_body(self, body, url, timestamp):
+
+    def insertBody(self, body, url, timestamp):
         query = "INSERT INTO bodies(body,url,`timestamp`) " \
                 "VALUES(%s,%s,%s)"
         args = (body, url, timestamp)
@@ -39,7 +53,7 @@ class Writer:
 
 
 
-    def insert_link(self, link, origin, timestamp):
+    def insertLink(self, link, origin, timestamp):
         linkWithoutEncoding = link.encode('utf8')
         link = link
         query = "INSERT INTO links(link,origin, `timestamp`) " \
@@ -59,4 +73,9 @@ class Writer:
         args = (finalLink, origin, timestamp)
 
         self.insertToDbExecution(query, args)       
+
+    def updateLink(self, link, timestamp, lang):
+        query = "UPDATE links SET parsed=%s, lang=%s WHERE link=%s"
+        args = (timestamp, lang.encode('utf8'), link)
+        self.updateDbExecution(query, args)
  
